@@ -17,6 +17,7 @@
             crossorigin="anonymous" th:src="@{/webjars/bootstrap/3.3.7-1/js/bootstrap.min.js}"></script>
 </head>
 <body>
+<!--/*@thymesVar id="recipe" type="guru.springframework.spring5recipeapp.domain.Recipe"*/-->
 <div class="container-fluid" style="margin-top: 20px">
     <div class="row">
         <div class="col-md-6 col-md-offset-3">
@@ -32,8 +33,8 @@
                             </div>
                             <div class="col-md-9">
                                 <ul th:remove="all-but-first">
-                                    <li th:each="catagory : ${recipe.categories}"
-                                        th:text="${catagory.description}">cat one</li>
+                                    <li th:each="category : ${recipe.categories}"
+                                        th:text="${category.description}">cat one</li>
                                     <li>cat two</li>
                                     <li>cat three</li>
                                 </ul>
@@ -91,7 +92,6 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <ul th:remove="all-but-first">
-                                    <!--/*@thymesVar id="ingredient" type="guru.springframework.spring5recipeapp.domain.Ingredient"*/-->
                                     <li th:each="ingredient : ${recipe.ingredients}"
                                         th:text="${ingredient.amount + ' ' + ingredient.uom.description +
                                         ' - ' + ingredient.description}">1 Cup of milk</li>
