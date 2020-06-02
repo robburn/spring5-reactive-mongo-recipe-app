@@ -47,7 +47,7 @@ class RecipeServiceImplTest {
     }
 
     @Test
-    void getRecipes() {
+    void getRecipesTest() {
         Recipe recipe = new Recipe();
         HashSet recipesData = new HashSet();
         recipesData.add(recipe);
@@ -62,14 +62,16 @@ class RecipeServiceImplTest {
     }
 
     @Test
-    void testGetRecipes() {
-    }
+    public  void testDeleteById() throws Exception {
+        // given
+        Long idToDelete = Long.valueOf(2L);
 
-    @Test
-    void findById() {
-    }
+        // when
+        recipeService.deleteById(idToDelete);
 
-    @Test
-    void saveRecipeCommand() {
+        // no 'when', since method has void return type
+
+        // then
+        verify(recipeRepository, times(1)).deleteById(anyLong());
     }
 }
