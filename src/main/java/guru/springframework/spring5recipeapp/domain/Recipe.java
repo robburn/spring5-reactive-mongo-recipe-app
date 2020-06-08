@@ -4,11 +4,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
+@Slf4j
 @Getter
 @Setter
 @EqualsAndHashCode(exclude = {"recipe"})
@@ -58,5 +60,10 @@ public class Recipe {
         ingredient.setRecipe(this);
         this.ingredients.add(ingredient);
         return this;
+    }
+
+    public void deleteIngredient(Ingredient ingredient) {
+        log.debug("Removing ingredient id: " + ingredient.getId());
+        this.ingredients.remove(ingredient);
     }
 }
