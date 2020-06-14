@@ -36,7 +36,9 @@ public class ImageControllerTest {
         MockitoAnnotations.initMocks(this);
 
         controller = new ImageController(imageService, recipeService);
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new ExceptionHandlerController())
+                .build();
     }
 
     @Test
@@ -94,5 +96,13 @@ public class ImageControllerTest {
                 .andReturn().getResponse();
         byte[] responseBytes = response.getContentAsByteArray();
         assertEquals(s.getBytes().length, responseBytes.length);
+    }
+
+    @Test
+    public void testGetImageNumberFormatException() throws Exception {
+        MockHttpServletRequestBuilder getRequest = MockMvcRequestBuilders.get("/recipe/asdf/recipeimage");
+        mockMvc.perform(getRequest)
+                .andExpect(status().isBadRequest())
+                .andExpect(view().name("400error"));
     }
 }
