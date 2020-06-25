@@ -20,8 +20,8 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by jt on 6/21/17.
  */
-@Ignore
 @RunWith(SpringRunner.class)
+//@DataMongoTest
 @SpringBootTest
 public class RecipeServiceIT {
 
@@ -39,7 +39,7 @@ public class RecipeServiceIT {
     @Autowired
     RecipeToRecipeCommand recipeToRecipeCommand;
 
-    @Transactional
+//    @Transactional
     @Test
     public void testSaveOfDescription() throws Exception {
         //given
