@@ -18,7 +18,7 @@ public class UnitOfMeasureReactiveRepositoryTest extends TestCase {
 
     @Before
     public void setUp() throws Exception {
-        unitOfMeasureReactiveRepository.deleteAll();
+        unitOfMeasureReactiveRepository.deleteAll().block();
     }
 
     @Test
