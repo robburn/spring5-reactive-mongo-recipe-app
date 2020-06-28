@@ -26,7 +26,7 @@ public class RecipeCommand {
     @Size(min = 3, max = 255)
     private String description;
 
-    @Min(1)
+    @Min(0)
     @Max(999)
     private Integer prepTime;
 

@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 
@@ -22,8 +24,14 @@ public class RecipeController {
     private static final String RECIPE_RECIPEFORM_URL = "recipe/recipeform";
     private final RecipeService recipeService;
 
+    private WebDataBinder webDataBinder;
+
     public RecipeController(RecipeService recipeService) {
         this.recipeService = recipeService;
+    }
+
+    public void initBinder(WebDataBinder webDataBinder) {
+        this.webDataBinder = webDataBinder;
     }
 
     @GetMapping("/recipe/{id}/show")
@@ -43,25 +51,27 @@ public class RecipeController {
 
     @GetMapping("recipe/{id}/update")
     public String updateRecipe(@PathVariable String id, Model model){
-        model.addAttribute("recipe", recipeService.findCommandById(id).block());
+        model.addAttribute("recipe", recipeService.findCommandById(id));
         return RECIPE_RECIPEFORM_URL;
     }
 
     @PostMapping("recipe")
-    public String saveOrUpdate(@Valid @ModelAttribute("recipe") RecipeCommand command, BindingResult bindingResult){
+    public Mono<String> saveOrUpdate(@ModelAttribute("recipe") RecipeCommand command){
+        webDataBinder.validate();
+        BindingResult bindingResult = webDataBinder.getBindingResult();
 
         if(bindingResult.hasErrors()){
-
             bindingResult.getAllErrors().forEach(objectError -> {
                 log.debug(objectError.toString());
             });
-
-            return RECIPE_RECIPEFORM_URL;
+            return Mono.just(RECIPE_RECIPEFORM_URL);
         }
 
-        RecipeCommand savedCommand = recipeService.saveRecipeCommand(command).block();
+        Mono<String> redirect = recipeService
+                .saveRecipeCommand(command)
+                .map(savedRecipe -> "redirect:/recipe/" + savedRecipe.getId() + "/show" );
 
-        return "redirect:/recipe/" + savedCommand.getId() + "/show";
+        return redirect;
     }
 
     @GetMapping("recipe/{id}/delete")
