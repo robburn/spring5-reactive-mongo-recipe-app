@@ -30,6 +30,7 @@ public class RecipeController {
         this.recipeService = recipeService;
     }
 
+    @InitBinder
     public void initBinder(WebDataBinder webDataBinder) {
         this.webDataBinder = webDataBinder;
     }
@@ -64,8 +65,12 @@ public class RecipeController {
             bindingResult.getAllErrors().forEach(objectError -> {
                 log.debug(objectError.toString());
             });
+//            return RECIPE_RECIPEFORM_URL;
             return Mono.just(RECIPE_RECIPEFORM_URL);
         }
+
+//        RecipeCommand savedCommand = recipeService.saveRecipeCommand(command).block();
+//        return "redirect:/recipe/" + savedCommand.getId() + "/show";
 
         Mono<String> redirect = recipeService
                 .saveRecipeCommand(command)
