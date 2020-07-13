@@ -11,7 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by jt on 6/28/17.
@@ -51,61 +55,45 @@ public class IngredientServiceImpl implements IngredientService {
 
     @Override
     public Mono<IngredientCommand> saveIngredientCommand(IngredientCommand command) {
-        Recipe recipe = recipeReactiveRepository.findById(command.getRecipeId()).block();
-
-        if(recipe == null){
-            //todo toss error if not found!
-            log.error("Recipe not found for id: " + command.getRecipeId());
-            return Mono.just(new IngredientCommand());
-        } else {
-
-            Optional<Ingredient> ingredientOptional = recipe
-                    .getIngredients()
-                    .stream()
-                    .filter(ingredient -> ingredient.getId().equals(command.getId()))
-                    .findFirst();
-
-            if(ingredientOptional.isPresent()){
-                Ingredient ingredientFound = ingredientOptional.get();
-                ingredientFound.setDescription(command.getDescription());
-                ingredientFound.setAmount(command.getAmount());
-                ingredientFound.setUom(unitOfMeasureReactiveRepository
-                        .findById(command.getUom().getId()).block());
-
-                if (ingredientFound.getUom() == null){
-                    new RuntimeException("UOM NOT FOUND");
-                }
-            } else {
-                //add new Ingredient
-                Ingredient ingredient = ingredientCommandToIngredient.convert(command);
-              //  ingredient.setRecipe(recipe);
-                recipe.addIngredient(ingredient);
-            }
-
-            Recipe savedRecipe = recipeReactiveRepository.save(recipe).block();
-
-            Optional<Ingredient> savedIngredientOptional = savedRecipe.getIngredients().stream()
-                    .filter(recipeIngredients -> recipeIngredients.getId().equals(command.getId()))
-                    .findFirst();
-
-            //check by description
-            if(!savedIngredientOptional.isPresent()){
-                //not totally safe... But best guess
-                savedIngredientOptional = savedRecipe.getIngredients().stream()
-                        .filter(recipeIngredients -> recipeIngredients.getDescription().equals(command.getDescription()))
-                        .filter(recipeIngredients -> recipeIngredients.getAmount().equals(command.getAmount()))
-                        .filter(recipeIngredients -> recipeIngredients.getUom().getId().equals(command.getUom().getId()))
-                        .findFirst();
-            }
-
-            //todo check for fail
-
-            //enhance with id value
-            IngredientCommand ingredientCommandSaved = ingredientToIngredientCommand.convert(savedIngredientOptional.get());
-            ingredientCommandSaved.setRecipeId(recipe.getId());
-
-            return Mono.just(ingredientCommandSaved);
-        }
+        Objects.requireNonNull(command);
+        AtomicReference<String> ingredientId = new AtomicReference<>();
+        AtomicReference<String> recipeId = new AtomicReference<>();
+        return recipeReactiveRepository.findById(command.getRecipeId())
+                .map(recipe -> {
+                    recipeId.set(recipe.getId());
+                    recipe.getIngredients()
+                            .stream()
+                            .filter(ingredient -> ingredient.getId().equalsIgnoreCase(command.getId()))
+                            .findFirst()
+                            .map(ingredient -> {
+                                ingredientId.set(command.getId());
+                                ingredient.setDescription(command.getDescription());
+                                ingredient.setAmount(command.getAmount());
+                                return recipe;
+                            })
+                            .orElseGet(() -> {
+                                Ingredient newIngredient = ingredientCommandToIngredient.convert(command);
+                                ingredientId.set(Objects.requireNonNull(newIngredient).getId());
+                                unitOfMeasureReactiveRepository
+                                        .findById(command.getUom().getId())
+                                        .flatMap(unitOfMeasure -> {
+                                            newIngredient.setUom(unitOfMeasure);
+                                            return Mono.just(unitOfMeasure);
+                                        }).subscribe();
+                                recipe.addIngredient(newIngredient);
+                                return recipe;
+                            });
+                    return recipe;
+                })
+                .flatMap(recipe -> recipeReactiveRepository.save(recipe).then(Mono.just(recipe)))
+                .flatMapIterable(Recipe::getIngredients)
+                .filter(savedIngredient -> savedIngredient.getId().equalsIgnoreCase(ingredientId.get()))
+                .flatMap(savedIngredient -> {
+                    IngredientCommand ingredientCommand = ingredientToIngredientCommand.convert(savedIngredient);
+                    ingredientCommand.setRecipeId(recipeId.get());
+                    return Mono.justOrEmpty(ingredientCommand);
+                })
+                .single();
     }
 
     @Override
